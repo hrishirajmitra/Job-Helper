@@ -1,201 +1,126 @@
-# **Software Requirements Specification (SRS)**
+# Software Requirements Specification (SRS) Document
 
-**Project Title**: AI-Powered Career Roadmap Builder
-**Document Version**: 1.0
-**Date**: May 10, 2025
+## 1. Introduction
 
----
+### 1.1 Purpose
 
-## **1. Introduction**
+The purpose of this document is to define the software requirements for a career planning application that utilizes multiple microservices and LLMs to help users develop personalized roadmaps to reach their target job roles. The application extracts skills from job descriptions, recommends learning paths, and provides continuous support through evaluations and a Q\&A system.
 
-### **1.1 Purpose**
+### 1.2 Scope
 
-The purpose of this system is to help users achieve their desired job by analyzing job descriptions using LLM APIs to extract skill requirements (technical, soft, domain-specific, certifications, and experience), and then generating a personalized, structured learning roadmap based on their current skills and career aspirations.
+This application is designed to:
 
-### **1.2 Scope**
+* Parse job descriptions and extract detailed skill requirements.
+* Categorize skills into Technical, Soft, Domain-Specific, Certifications, and Experience.
+* Generate a personalized roadmap for skill acquisition and interview readiness.
+* Use microservices to handle different aspects: parsing, recommendation, evaluation, user management, Q\&A, and feedback.
+* Implement an LLM-enhanced feedback loop to evaluate and refine roadmap and response quality.
+* Offer a general Q\&A assistant for guidance and preparation help.
 
-This application is built using a **microservices architecture** and leverages **LLMs (Large Language Models)** for skill extraction. The system will:
+### 1.3 Definitions, Acronyms, and Abbreviations
 
-* Accept job descriptions as input.
-* Call an AI model API to extract all relevant skills and experience.
-* Categorize extracted skills into well-defined buckets.
-* Assess user’s current skills via profile or quiz.
-* Generate a detailed roadmap for skill acquisition and interview readiness.
-* Track progress and provide curated learning resources.
+* LLM: Large Language Model
+* NLP: Natural Language Processing
+* API: Application Programming Interface
+* UI: User Interface
 
-### **1.3 Definitions, Acronyms, and Abbreviations**
+## 2. Overall Description
 
-| Term | Description                       |
-| ---- | --------------------------------- |
-| LLM  | Large Language Model              |
-| API  | Application Programming Interface |
-| NLP  | Natural Language Processing       |
-| UI   | User Interface                    |
-| REST | Representational State Transfer   |
-| JWT  | JSON Web Token                    |
+### 2.1 Product Perspective
 
----
+The system consists of several microservices communicating via REST APIs and includes the following components:
 
-## **2. Overall Description**
+* Job Description Parsing Service
+* Skill Categorization and Extraction Service
+* Roadmap Generation Service
+* Evaluation and Improvement Service (LLM-based)
+* Q\&A Guidance Service (LLM-based)
+* User Management and Progress Tracking Service
+* Frontend Client (Web-based)
 
-### **2.1 Product Perspective**
+### 2.2 Product Functions
 
-This is a **modular web application** consisting of multiple services:
+* Upload or paste job description.
+* Extract and classify skills from job description.
+* Generate a phase-wise learning roadmap.
+* Evaluate generated outputs using a secondary LLM.
+* Allow user interaction with a Q\&A assistant.
+* Store and track user progress and preferences.
+* Provide feedback and continuous improvement options.
 
-* **Job Analysis Service** (NLP-based skill extraction)
-* **User Profile Service**
-* **Roadmap Generator Service**
-* **Resource Aggregation Service**
-* **Progress Tracker Service**
+### 2.3 User Classes and Characteristics
 
-Each service is independent and communicates over REST APIs. LLM integrations are stateless and triggered by job input.
+* **End User**: Job seekers aiming to target specific roles.
+* **Admin/Trainer**: (Optional) For managing templates, feedback models.
 
-### **2.2 Product Functions**
+### 2.4 Operating Environment
 
-* Parse and analyze job descriptions.
-* Extract and categorize skills.
-* Compare extracted skills with user profile.
-* Generate phase-wise learning roadmap.
-* Offer curated learning resources and project ideas.
-* Track learning progress.
-* Provide roadmap updates as user improves.
+* Web Browser (Chrome, Firefox, Safari)
+* Backend on cloud platforms (AWS/GCP/Azure)
+* Database: MongoDB/PostgreSQL
 
-### **2.3 User Classes and Characteristics**
+### 2.5 Design and Implementation Constraints
 
-| User Class   | Description                                                                                               |
-| ------------ | --------------------------------------------------------------------------------------------------------- |
-| General User | Individuals seeking career advancement. Can upload job descriptions, manage profile, and follow roadmaps. |
-| Admin        | Manages LLM configurations, monitors service health, moderates content.                                   |
+* Use of LLMs requires integration with APIs (e.g. Anthropic).
+* GDPR compliance for storing user data.
 
-### **2.4 Operating Environment**
+### 2.6 User Documentation
 
-* **Frontend**: React (Vite) + Tailwind
-* **Backend**: Node.js + Express
-* **Database**: MongoDB (Mongoose)
-* **LLM API**: OpenAI or similar
-* **Deployment**: Cloud-based (Render / Heroku / AWS)
+* User Manual
+* FAQ and Troubleshooting Guide
 
-### **2.5 Design and Implementation Constraints**
+## 3. Specific Requirements
 
-* Must ensure API rate limits for LLMs are respected.
-* Skill categorization logic must follow a consistent schema.
-* Support modular roadmap updates as new roles emerge.
+### 3.1 Functional Requirements
 
----
+1. **Input Job Description**
 
-## **3. External Interface Requirements**
+   * Users can paste or upload job descriptions.
 
-### **3.1 User Interfaces**
+2. **Skill Extraction and Categorization**
 
-* Upload job description (textarea or PDF).
-* Dashboard with skill comparison chart.
-* Phase-wise roadmap view with resource links.
-* Progress tracker and milestone editor.
+   * The system extracts and categorizes skills (Technical, Soft, etc.)
 
-### **3.2 Hardware Interfaces**
+3. **Roadmap Generation**
 
-None – web application.
+   * A multi-phase roadmap is generated for each job description.
 
-### **3.3 Software Interfaces**
+4. **LLM Evaluation Loop**
 
-| System                | Interface        | Purpose                                                     |
-| --------------------- | ---------------- | ----------------------------------------------------------- |
-| LLM API               | RESTful          | Send job description and receive skill set                  |
-| GitHub API (optional) | OAuth, repo scan | Auto-fetch user skills via repositories                     |
-| Learning Platforms    | Scraping/API     | Recommend resources (e.g., YouTube, Coursera, freeCodeCamp) |
+   * A second LLM evaluates output quality (e.g., roadmap accuracy, skill mapping) and iteratively improves it.
 
-### **3.4 Communications Interfaces**
+5. **Q\&A Assistant**
 
-HTTPS protocol for all service communications with secure tokens (JWT) and OAuth2 where needed.
+   * An LLM-based conversational assistant helps users clarify doubts or request custom guidance.
 
----
+6. **Progress Tracking**
 
-## **4. System Features**
+   * Users can mark skills as learned or phases as complete.
 
-### **4.1 Job Description Analyzer**
+7. **User Profile Management**
 
-**Description**: Accepts job input and invokes the LLM for detailed skill extraction.
-**Inputs**: Freeform job description text
-**Outputs**: Structured list of skills with categories and context
-**Dependencies**: LLM API
-**Errors**: Malformed input, API rate limit
+   * Users can log in, view history, update preferences.
 
-### **4.2 Skill Categorizer**
+### 3.2 Non-Functional Requirements
 
-**Description**: Categorizes extracted skills into defined buckets.
-**Categories**:
+* **Performance**: Output within 2-5 seconds for most LLM queries.
+* **Reliability**: 99.9% uptime for core services.
+* **Usability**: Intuitive and beginner-friendly UI/UX.
+* **Scalability**: Microservices can scale independently.
+* **Security**: Role-based access, encrypted data storage.
 
-* Technical
-* Soft
-* Domain-Specific
-* Certifications
-* Experience
+### 3.3 Interface Requirements
 
-### **4.3 User Profile Management**
+* **Frontend**: Web interface built with React or similar.
+* **Backend**: REST APIs for service communication.
+* **LLM APIs**: Integration with LLM endpoints.
+* **Database**: Store user data, skill maps, roadmaps, Q\&A logs.
 
-**Description**: Stores and updates user's existing skills, qualifications, and experience.
-**Data Fields**: Skills, certifications, education, uploaded resume, quiz scores
+## 4. Appendices
 
-### **4.4 Roadmap Generator**
-
-**Description**: Compares user profile with job skillset and generates a roadmap in phases.
-**Phases**:
-
-1. Foundations
-2. Specialized Knowledge
-3. Project Work
-4. Interview Preparation
-   **Output**: Interactive roadmap with links, project ideas, and deadlines
-
-### **4.5 Resource Recommender**
-
-**Description**: Maps each skill in the roadmap to curated learning resources.
-**Sources**: YouTube, Medium, official docs, MOOCs, GitHub
-
-### **4.6 Progress Tracker**
-
-**Description**: Allows users to mark milestones, track learning, and auto-update roadmap based on achievements.
+* A. Sample Job Descriptions
+* B. Example Skill Extraction Output
+* C. Mock UI Screens
+* D. Entity Relationship Diagram (ERD) – optional
 
 ---
-
-## **5. Non-Functional Requirements**
-
-### **5.1 Performance Requirements**
-
-* API response under 3 seconds for skill extraction
-* Concurrent job analysis support for 100+ users
-
-### **5.2 Security Requirements**
-
-* JWT for user authentication
-* Input sanitization for job descriptions
-* Rate-limiting to prevent abuse of LLM API
-
-### **5.3 Maintainability**
-
-* Microservice architecture enables independent deployment and upgrades
-
-### **5.4 Scalability**
-
-* Horizontally scalable backend
-* Stateless API communication
-
-### **5.5 Usability**
-
-* Mobile-responsive interface
-* Accessibility-compliant (WCAG 2.1 AA)
-
----
-
-## **6. Appendices**
-
-### **6.1 Skill Schema Sample**
-
-```json
-{
-  "skillName": "Distributed Systems",
-  "category": "Technical",
-  "context": "Mentioned as essential for designing scalable backend services"
-}
-```
-
