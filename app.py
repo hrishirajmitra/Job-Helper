@@ -35,6 +35,9 @@ except Exception as e:
     st.error(f"Error during startup: {str(e)}")
     st.stop()
 
+# Import the CV analyzer functions
+from cv_analyzer import extract_text_from_pdf, analyze_cv
+
 # Set page configuration
 st.set_page_config(
     page_title="Career Roadmap Generator",
@@ -579,6 +582,118 @@ def display_evaluation(evaluation):
         else:
             st.write(improvements)
 
+def display_cv_analysis(analysis):
+    """Display the CV analysis results with better formatting"""
+    if "error" in analysis:
+        st.error(f"Error in analysis: {analysis['error']}")
+        return
+    
+    if "raw_response" in analysis:
+        # Try to parse JSON from raw response
+        try:
+            raw_text = analysis["raw_response"]
+            if isinstance(raw_text, str) and "{" in raw_text:
+                start_idx = raw_text.find("{")
+                end_idx = raw_text.rfind("}") + 1
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = raw_text[start_idx:end_idx]
+                    parsed_analysis = json.loads(json_str)
+                    if isinstance(parsed_analysis, dict) and len(parsed_analysis) > 0:
+                        st.success("Successfully parsed analysis data")
+                        return display_cv_analysis(parsed_analysis)
+        except json.JSONDecodeError:
+            pass
+            
+        st.warning("Analysis contains raw text. Displaying as is:")
+        st.write(analysis["raw_response"])
+        return
+    
+    # Display skills match
+    if "skills_match" in analysis and analysis["skills_match"]:
+        st.subheader("🎯 Skills Match")
+        
+        # Create a dataframe for skills match with confidence levels
+        if isinstance(analysis["skills_match"], list):
+            match_data = []
+            for item in analysis["skills_match"]:
+                if isinstance(item, dict) and "skill" in item and "confidence" in item:
+                    match_data.append(item)
+                elif isinstance(item, str):
+                    # Try to parse confidence from string format
+                    parts = item.split(":")
+                    if len(parts) == 2:
+                        skill = parts[0].strip()
+                        confidence = parts[1].strip()
+                        match_data.append({"skill": skill, "confidence": confidence})
+                    else:
+                        match_data.append({"skill": item, "confidence": "medium"})
+            
+            if match_data:
+                df = pd.DataFrame(match_data)
+                
+                # Custom formatter for confidence
+                def highlight_confidence(val):
+                    if "high" in val.lower():
+                        return "background-color: #d4edda; color: #155724"
+                    elif "medium" in val.lower():
+                        return "background-color: #fff3cd; color: #856404"
+                    elif "low" in val.lower():
+                        return "background-color: #f8d7da; color: #721c24"
+                    return ""
+                
+                # Display styled dataframe
+                st.dataframe(df.style.applymap(highlight_confidence, subset=['confidence']))
+            else:
+                for item in analysis["skills_match"]:
+                    st.write(f"- {item}")
+        else:
+            st.write(analysis["skills_match"])
+    
+    # Display skills gap
+    if "skills_gap" in analysis and analysis["skills_gap"]:
+        st.subheader("🔍 Skills Gap")
+        
+        # Create a highlighted list of missing skills
+        for skill in analysis["skills_gap"]:
+            st.markdown(f"""
+            <div style="padding: 10px; margin-bottom: 8px; border-radius: 5px; 
+                        background-color: #f8d7da; border-left: 4px solid #dc3545;">
+                {skill}
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Display recommendations
+    if "recommendations" in analysis and analysis["recommendations"]:
+        st.subheader("💡 Recommended Actions")
+        
+        # Create action cards
+        for i, rec in enumerate(analysis["recommendations"]):
+            st.markdown(f"""
+            <div style="padding: 15px; margin-bottom: 10px; border-radius: 5px; 
+                        background-color: #e8f4f8; border-left: 4px solid #17a2b8;">
+                <b>Action {i+1}:</b> {rec}
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Display CV improvement suggestions
+    if "cv_improvement" in analysis and analysis["cv_improvement"]:
+        st.subheader("📝 Resume Improvement Tips")
+        
+        if isinstance(analysis["cv_improvement"], list):
+            for tip in analysis["cv_improvement"]:
+                st.markdown(f"""
+                <div style="padding: 10px; margin-bottom: 8px; border-radius: 5px; 
+                            background-color: #d1ecf1; border-left: 4px solid #0c5460;">
+                    {tip}
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div style="padding: 15px; border-radius: 5px; background-color: #d1ecf1;">
+                {analysis["cv_improvement"]}
+            </div>
+            """, unsafe_allow_html=True)
+
 def qa_section(roadmap, skills):
     """Create an interactive Q&A section"""
     st.header("Ask Questions About Your Roadmap")
@@ -702,11 +817,12 @@ def main():
         # Visual separator
         st.markdown("---")
         
-        # Create tabs with icons
-        tab1, tab2, tab3, tab4 = st.tabs([
+        # Create tabs with icons - add a new tab for CV analysis
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "💼 Extracted Skills", 
             "🛣️ Learning Roadmap", 
             "📊 Evaluation", 
+            "📄 CV Analysis",
             "❓ Q&A"
         ])
         
@@ -732,6 +848,73 @@ def main():
                 st.error("No evaluation data available")
         
         with tab4:
+            st.header("CV/Resume Analysis")
+            st.write("Upload your CV/resume to get personalized feedback based on the job requirements and roadmap.")
+            
+            # Create a button to clear the uploaded file if needed
+            if 'uploaded_cv' in st.session_state and st.button("Clear uploaded file"):
+                del st.session_state.uploaded_cv
+                st.experimental_rerun()
+            
+            # Use the file_uploader, but store the result in session state
+            uploaded_file = st.file_uploader("Upload your CV/Resume (PDF)", type="pdf", key="cv_uploader")
+            
+            # If we have a new upload, store it in session state
+            if uploaded_file is not None:
+                st.session_state.uploaded_cv = uploaded_file
+            
+            # Use the file from session state for processing, if available
+            if 'uploaded_cv' in st.session_state:
+                try:
+                    # Use the file from session state
+                    cv_file = st.session_state.uploaded_cv
+                    
+                    # Show a preview of the file name and size
+                    file_details = {"Filename": cv_file.name, "FileSize": f"{cv_file.size/1024:.2f} KB"}
+                    
+                    # Extract text from the PDF
+                    with st.spinner("Extracting text from PDF..."):
+                        # Store extracted text in session state if not already there
+                        if 'cv_text' not in st.session_state:
+                            st.session_state.cv_text = extract_text_from_pdf(cv_file.getvalue())
+                        cv_text = st.session_state.cv_text
+                    
+                    # Show text extraction result
+                    with st.expander("Extracted Text Preview"):
+                        st.text(cv_text[:500] + ("..." if len(cv_text) > 500 else ""))
+                        st.write(f"Total characters: {len(cv_text)}")
+                    
+                    # Analyze CV button
+                    if st.button("Analyze CV Against Job Requirements"):
+                        with st.spinner("Analyzing your CV against job requirements..."):
+                            analysis_result = analyze_cv(
+                                cv_text=cv_text,
+                                skills=results["skills_data"],
+                                roadmap=results["improved_roadmap"]
+                            )
+                            
+                            # Store in session state
+                            st.session_state.cv_analysis = analysis_result
+                    
+                    # Display analysis if available
+                    if "cv_analysis" in st.session_state:
+                        display_cv_analysis(st.session_state.cv_analysis)
+                        
+                        # Offer download of analysis
+                        analysis_json = json.dumps(st.session_state.cv_analysis, indent=2)
+                        st.download_button(
+                            label="Download Analysis (JSON)",
+                            data=analysis_json,
+                            file_name="cv_analysis.json",
+                            mime="application/json"
+                        )
+                
+                except Exception as e:
+                    st.error(f"Error processing CV: {str(e)}")
+            else:
+                st.info("Please upload a PDF file to begin the analysis.")
+        
+        with tab5:
             if "improved_roadmap" in results and "skills_data" in results:
                 qa_section(results["improved_roadmap"], results["skills_data"])
             else:
