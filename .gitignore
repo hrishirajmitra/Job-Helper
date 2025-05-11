@@ -2,3 +2,4 @@
 irel
 __pycache__
 outputs
+.streamlit
