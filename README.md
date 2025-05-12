@@ -45,6 +45,7 @@ graph TD
     QAAssistant -->|Answer| WebUI
     WebUI --> |Uploads CV| CVanalyser
     CVanalyser --> |Inputs| WebUI
+    CVanalyser --> APIUtils
 ```
 
 ## 🚀 Installation
