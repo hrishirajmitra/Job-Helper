@@ -43,6 +43,8 @@ graph TD
     GeminiAPI -->|API Responses| APIUtils
     WebUI -->|Question| QAAssistant[Q&A Assistant]
     QAAssistant -->|Answer| WebUI
+    WebUI --> |Uploads CV| CVanalyser
+    CVanalyser --> |Inputs| WebUI
 ```
 
 ## 🚀 Installation
